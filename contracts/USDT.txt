@@ -1,0 +1,51 @@
+library SafeMath
+contract Ownable
+
+// ERC接口合约
+contract ERC20Basic
+contract ERC20 is ERC20Basic
+
+//定义了手续费 与 预防短地址共攻击的 modifier
+contract BasicToken is Ownable, ERC20Basic {
+    transfer();
+    balanceof();
+}
+
+//定义了预防uint 溢出的 max_uint
+contract StandardToken is BasicToken, ERC20 {
+    transferFrom();
+    approve();
+    allowance();
+}
+
+contract Pausable is Ownable 
+
+contract BlackList is Ownable, BasicToken {
+    getBlackList();
+    getOwner();
+    addBlackList();
+    removeBlackList();
+    destroyBlackFunds();
+}
+
+//合约的升级
+contract UpgradedStandardToken is StandardToken {
+    transferByLegacy;
+    transferFromByLegacy;
+    approveByLegacy;
+}
+
+//
+contract TetherToken is Pausable, StandardToken, BlackList {
+    constructor();
+    transfer();
+    transferFrom();
+    balanceOf();
+    approve();
+    allowance();
+    deprecate();    //合约升级
+    totalSupply();
+    issue();  //代币增发
+    redeem()    //burn
+    setParams()     //BasicPoints, MaxFee
+}
