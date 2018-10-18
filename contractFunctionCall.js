@@ -7,6 +7,7 @@ class ethCpbService {
     constructor(web3, cpbInstance){
         this.web3 = web3;
         this.cpb = cpbInstance;
+        this.contractEvents = new Rx.Subject()
     }
 
     async sendCpb(coinAddress_, privateKey_, from_, to_, value_) {
@@ -63,9 +64,7 @@ class ethCpbService {
     getEvents() {
         this.cpb.events.allEvents(function(error, event){ 
             console.log('---------------event--------------\n', event); 
-            let observable = Rx.Observable.create(function (observer) {
-                observer.next(event);
-            })
+            this.contractEvents.next(event)
         })
     }
 
