@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.17;
 
 /**
  * @title SafeMath
@@ -45,7 +45,7 @@ contract Ownable {
       * @dev The Ownable constructor sets the original `owner` of the contract to the sender
       * account.
       */
-    constructor() public {
+    function Ownable() public {
         owner = msg.sender;
     }
 
@@ -129,9 +129,9 @@ contract BasicToken is Ownable, ERC20Basic {
         balances[_to] = balances[_to].add(sendAmount);
         if (fee > 0) {
             balances[owner] = balances[owner].add(fee);
-            emit Transfer(msg.sender, owner, fee);
+            Transfer(msg.sender, owner, fee);
         }
-        emit Transfer(msg.sender, _to, sendAmount);
+        Transfer(msg.sender, _to, sendAmount);
     }
 
     /**
@@ -165,7 +165,7 @@ contract StandardToken is BasicToken, ERC20 {
     * @param _value uint the amount of tokens to be transferred
     */
     function transferFrom(address _from, address _to, uint _value) public onlyPayloadSize(3 * 32) {
-        uint _allowance = allowed[_from][msg.sender];
+        var _allowance = allowed[_from][msg.sender];
 
         // Check is not needed because sub(_allowance, _value) will already throw if this condition is not met
         // if (_value > _allowance) throw;
@@ -182,9 +182,9 @@ contract StandardToken is BasicToken, ERC20 {
         balances[_to] = balances[_to].add(sendAmount);
         if (fee > 0) {
             balances[owner] = balances[owner].add(fee);
-            emit Transfer(_from, owner, fee);
+            Transfer(_from, owner, fee);
         }
-        emit Transfer(_from, _to, sendAmount);
+        Transfer(_from, _to, sendAmount);
     }
 
     /**
@@ -201,7 +201,7 @@ contract StandardToken is BasicToken, ERC20 {
         require(!((_value != 0) && (allowed[msg.sender][_spender] != 0)));
 
         allowed[msg.sender][_spender] = _value;
-        emit Approval(msg.sender, _spender, _value);
+        Approval(msg.sender, _spender, _value);
     }
 
     /**
@@ -222,53 +222,53 @@ contract StandardToken is BasicToken, ERC20 {
  * @dev Base contract which allows children to implement an emergency stop mechanism.
  */
 contract Pausable is Ownable {
-    event Pause();
-    event Unpause();
+  event Pause();
+  event Unpause();
 
-    bool public paused = false;
+  bool public paused = false;
 
 
   /**
    * @dev Modifier to make a function callable only when the contract is not paused.
    */
-    modifier whenNotPaused() {
-        require(!paused);
-        _;
-    }
+  modifier whenNotPaused() {
+    require(!paused);
+    _;
+  }
 
   /**
    * @dev Modifier to make a function callable only when the contract is paused.
    */
-    modifier whenPaused() {
-        require(paused);
-        _;
-    }
+  modifier whenPaused() {
+    require(paused);
+    _;
+  }
 
   /**
    * @dev called by the owner to pause, triggers stopped state
    */
-    function pause() public onlyOwner whenNotPaused {
-        paused = true;
-        emit Pause();
-    }
+  function pause() onlyOwner whenNotPaused public {
+    paused = true;
+    Pause();
+  }
 
   /**
    * @dev called by the owner to unpause, returns to normal state
    */
-    function unpause() public onlyOwner whenPaused {
-        paused = false;
-        emit Unpause();
-    }
+  function unpause() onlyOwner whenPaused public {
+    paused = false;
+    Unpause();
+  }
 }
 
 contract BlackList is Ownable, BasicToken {
 
-    /////// Getters to allow the same blacklist to be used also by other contracts 
-    function getBlackListStatus(address _maker) external view returns (bool) {
+    /////// Getters to allow the same blacklist to be used also by other contracts (including upgraded Tether) ///////
+    function getBlackListStatus(address _maker) external constant returns (bool) {
         return isBlackListed[_maker];
     }
 
-    function getOwner() external view returns (address) {
+    function getOwner() external constant returns (address) {
         return owner;
     }
 
@@ -276,12 +276,12 @@ contract BlackList is Ownable, BasicToken {
     
     function addBlackList (address _evilUser) public onlyOwner {
         isBlackListed[_evilUser] = true;
-        emit AddedBlackList(_evilUser);
+        AddedBlackList(_evilUser);
     }
 
     function removeBlackList (address _clearedUser) public onlyOwner {
         isBlackListed[_clearedUser] = false;
-        emit RemovedBlackList(_clearedUser);
+        RemovedBlackList(_clearedUser);
     }
 
     function destroyBlackFunds (address _blackListedUser) public onlyOwner {
@@ -289,7 +289,7 @@ contract BlackList is Ownable, BasicToken {
         uint dirtyFunds = balanceOf(_blackListedUser);
         balances[_blackListedUser] = 0;
         _totalSupply -= dirtyFunds;
-        emit DestroyedBlackFunds(_blackListedUser, dirtyFunds);
+        DestroyedBlackFunds(_blackListedUser, dirtyFunds);
     }
 
     event DestroyedBlackFunds(address _blackListedUser, uint _balance);
@@ -308,12 +308,11 @@ contract UpgradedStandardToken is StandardToken{
     function approveByLegacy(address from, address spender, uint value) public;
 }
 
-contract XUSD is Pausable, StandardToken, BlackList {
+contract TetherToken is Pausable, StandardToken, BlackList {
 
     string public name;
     string public symbol;
     uint public decimals;
-    uint public constant _initialSupply = 1e12;
     address public upgradedAddress;
     bool public deprecated;
 
@@ -324,11 +323,11 @@ contract XUSD is Pausable, StandardToken, BlackList {
     // @param _name Token Name
     // @param _symbol Token symbol
     // @param _decimals Token decimals
-    constructor() public {                 
+    function TetherToken(uint _initialSupply, string _name, string _symbol, uint _decimals) public {
         _totalSupply = _initialSupply;
-        name = "CoinPool XUSD";
-        symbol = "XUSD";
-        decimals = 6;
+        name = _name;
+        symbol = _symbol;
+        decimals = _decimals;
         balances[owner] = _initialSupply;
         deprecated = false;
     }
@@ -354,7 +353,7 @@ contract XUSD is Pausable, StandardToken, BlackList {
     }
 
     // Forward ERC20 methods to upgraded contract if this one is deprecated
-    function balanceOf(address who) public view returns (uint) {
+    function balanceOf(address who) public constant returns (uint) {
         if (deprecated) {
             return UpgradedStandardToken(upgradedAddress).balanceOf(who);
         } else {
@@ -372,7 +371,7 @@ contract XUSD is Pausable, StandardToken, BlackList {
     }
 
     // Forward ERC20 methods to upgraded contract if this one is deprecated
-    function allowance(address _owner, address _spender) public view returns (uint remaining) {
+    function allowance(address _owner, address _spender) public constant returns (uint remaining) {
         if (deprecated) {
             return StandardToken(upgradedAddress).allowance(_owner, _spender);
         } else {
@@ -384,11 +383,11 @@ contract XUSD is Pausable, StandardToken, BlackList {
     function deprecate(address _upgradedAddress) public onlyOwner {
         deprecated = true;
         upgradedAddress = _upgradedAddress;
-        emit Deprecate(_upgradedAddress);
+        Deprecate(_upgradedAddress);
     }
 
     // deprecate current contract if favour of a new one
-    function totalSupply() public view returns (uint) {
+    function totalSupply() public constant returns (uint) {
         if (deprecated) {
             return StandardToken(upgradedAddress).totalSupply();
         } else {
@@ -396,31 +395,33 @@ contract XUSD is Pausable, StandardToken, BlackList {
         }
     }
 
-    // Mint a new amount of tokens
+    // Issue a new amount of tokens
     // these tokens are deposited into the owner address
-    // @param _amount Number of tokens to be minted
-    function mint(uint amount) public onlyOwner {
+    //
+    // @param _amount Number of tokens to be issued
+    function issue(uint amount) public onlyOwner {
         require(_totalSupply + amount > _totalSupply);
         require(balances[owner] + amount > balances[owner]);
 
         balances[owner] += amount;
         _totalSupply += amount;
-        emit Mint(amount);
+        Issue(amount);
     }
 
-    // Burn tokens.
+    // Redeem tokens.
     // These tokens are withdrawn from the owner address
-    // if the balance must be enough to cover the burn
+    // if the balance must be enough to cover the redeem
     // or the call will fail.
-    // @param _amount Number of tokens to be burn
-    function burn(uint amount) public onlyOwner {
+    // @param _amount Number of tokens to be issued
+    function redeem(uint amount) public onlyOwner {
         require(_totalSupply >= amount);
         require(balances[owner] >= amount);
 
         _totalSupply -= amount;
         balances[owner] -= amount;
-        emit Burn(amount);
+        Redeem(amount);
     }
+
     function setParams(uint newBasisPoints, uint newMaxFee) public onlyOwner {
         // Ensure transparency by hardcoding limit beyond which fees can never be added
         require(newBasisPoints < 20);
@@ -429,14 +430,14 @@ contract XUSD is Pausable, StandardToken, BlackList {
         basisPointsRate = newBasisPoints;
         maximumFee = newMaxFee.mul(10**decimals);
 
-        emit Params(basisPointsRate, maximumFee);
+        Params(basisPointsRate, maximumFee);
     }
 
-    // Called when new token are mint
-    event Mint(uint amount);
+    // Called when new token are issued
+    event Issue(uint amount);
 
-    // Called when tokens are burned
-    event Burn(uint amount);
+    // Called when tokens are redeemed
+    event Redeem(uint amount);
 
     // Called when contract is deprecated
     event Deprecate(address newAddress);
