@@ -51,6 +51,7 @@ contract paperMarkingAlg is Ownable{
     struct Paper {
         uint startTime;
         int markerNumer;    //无奈啊，makers.length 得到的值是 uint, 计算平均值和均方差都需要 int
+        uint lastPeriodMarkerNum;   //记录上一期开奖的人数，方便下次开奖退钱给他们
         uint balance ; //每篇paper有自己的奖金池
         Marker[] markers;   
     }
@@ -111,13 +112,14 @@ contract paperMarkingAlg is Ownable{
                     papers[_paperID].markers[j].mark * decimals - meanMark) / papers[_paperID].markerNumer;
             }
 
-            //按照算法规则，把这些评分正常的人的钱退回去
-            for (uint k = 0; k < papers[_paperID].markers.length; k++){
+            //按照算法规则，把这些评分正常的人的钱退回去,计数从上一期开奖结束的人数开始
+            for (uint k = papers[_paperID].lastPeriodMarkerNum; k < papers[_paperID].markers.length; k++){
                 if (((papers[_paperID].markers[k].mark * decimals - meanMark) * (
                         papers[_paperID].markers[k].mark * decimals - meanMark) <= stdMark * 9) || ((
                             papers[_paperID].markers[k].mark * decimals - meanMark) * (
                                 papers[_paperID].markers[k].mark * decimals - meanMark) >= stdMark * -9)) {
-
+                    
+                    papers[_paperID].lastPeriodMarkerNum = papers[_paperID].markers.length;    // 更新上一期参与人数
                     papers[_paperID].markers[k].markerAddr.transfer(50);
                     papers[_paperID].balance.sub(50);
                     winner.push(papers[_paperID].markers[k].markerAddr);
@@ -125,7 +127,7 @@ contract paperMarkingAlg is Ownable{
                 }
             }
 
-            //剩下的钱作为奖金再分出去一半
+            //剩下的钱作为奖金再分出去一半，计数从0 开始，也就是越早参与的人获得奖励越多
             for (uint m = 0; m < winner.length; m++) {
                 winner[m].transfer(papers[_paperID].balance.div(2).div(winner.length));
             }
