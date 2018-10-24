@@ -57,6 +57,9 @@ contract paperMarkingAlg is Ownable{
     }
 
     uint constant DAY_IN_SECONDS = 86400;
+    uint awardPerid = 30 * DAY_IN_SECONDS;
+    int decimals = 1e18; // 分数乘以 位数 来解决小数位问题
+    address[] winner;
 
     //  paperID => paper{markers[marker1(address,marks), ...] ,startTime}
     // paperID 可以使用 paper hash
@@ -88,11 +91,8 @@ contract paperMarkingAlg is Ownable{
     */
     // 因为不能再以太坊上无限循环，所以我们只能在外部写个脚本，每30天调用一次这个函数了？？？
     // 大概是这么实现的吧。
-    function updateAward(uint _paperID) internal onlyOwner{
-        uint awardPerid = 30 * DAY_IN_SECONDS;
-        address[] winner;
+    function updateAward(uint _paperID) public onlyOwner{
         int fullMark = 0;  
-        int decimals = 1e18; // 分数乘以 位数 来解决小数位问题
         int meanMark = 0;
         int stdMark = 0;
         
